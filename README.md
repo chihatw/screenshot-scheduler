@@ -96,3 +96,61 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
   ```sh
   /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
   ```
+
+### launchd（macOS標準）による自動削除の設定方法
+
+macOSでは`launchd`を使うことで、スリープや電源OFF時も含めて、毎日決まった時刻に`cleanup.sh`を自動実行できます。
+
+#### 1. plistファイルの用意
+
+`scripts/com.chiha.cleanup.plist` を用意します（本リポジトリにサンプルあり）。内容例：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.chiha.cleanup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>12</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+```
+
+#### 2. 実行権限の付与
+
+```zsh
+chmod +x /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
+```
+
+#### 3. LaunchAgentsディレクトリへコピー
+
+```zsh
+cp /Users/chiha/projects-active/screenshot-scheduler/scripts/com.chiha.cleanup.plist ~/Library/LaunchAgents/
+```
+
+#### 4. launchdへ登録
+
+```zsh
+launchctl load ~/Library/LaunchAgents/com.chiha.cleanup.plist
+```
+
+#### 5. 動作
+
+- 毎日12:00に自動実行されます。
+- 12:00にMacがスリープや電源OFFの場合、復帰・起動時に自動で実行されます。
+- 設定を変更した場合は`launchctl unload`→`load`で再読み込みしてください。
+
+---
