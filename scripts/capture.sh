@@ -10,7 +10,8 @@ mkdir -p "$DIR"
 NUM_DISPLAYS=$(/usr/sbin/system_profiler SPDisplaysDataType | grep -c 'Resolution:')
 
 for ((i=1; i<=NUM_DISPLAYS; i++)); do
-  FILENAME="$(date +%m%d_%H%M)_${i}.png"
-  /usr/sbin/screencapture -x -D $i "$DIR/$FILENAME"
-  echo "Saved: $DIR/$FILENAME"
+  FILENAME="$(date +%m%d_%H%M)_${i}.jpg"
+  /usr/sbin/screencapture -x -D $i -t jpg "$DIR/$FILENAME"
+  /usr/local/bin/convert "$DIR/$FILENAME" -quality 40 "$DIR/$FILENAME"
+  echo "Saved: $DIR/$FILENAME (quality 40)"
 done
