@@ -115,11 +115,30 @@
   </head>
   <body>
     <div id="image-info"></div>
+
     <div id="image-pair">
       <img id="img2" src="" alt="画像2" class="clickable" />
       <img id="img1" src="" alt="画像1" class="clickable" />
     </div>
+    <div
+      id="shortcut-info"
+      style="
+        margin: 2px 0 8px 0;
+        font-size: 0.85em;
+        color: #aaa;
+        opacity: 0.6;
+        letter-spacing: 0.02em;
+      "
+    >
+      <span style="font-weight: normal">ショートカット:</span>
+      <span style="margin-left: 0.7em">←/→:前/次</span>
+      <span style="margin-left: 0.7em">a:左拡大</span>
+      <span style="margin-left: 0.7em">d:右拡大</span>
+      <span style="margin-left: 0.7em">Esc:閉じる</span>
+      <span style="margin-left: 0.7em">画像クリック:拡大</span>
+    </div>
     <div id="counter"></div>
+
     <div id="slider-container" style="width: 80%; margin: 15px 0">
       <input
         type="range"
@@ -330,6 +349,28 @@
           // モーダル表示前に自動再生中だった場合は再開
           if (wasPlaying) {
             startAutoPlay();
+          }
+        }
+        // a/dキーで画像拡大表示（モーダルが開いていない時のみ）
+        if (modal.style.display !== 'block') {
+          if (e.key === 'a') {
+            // 左の画像(img2)を拡大表示
+            wasPlaying = autoPlayInterval !== null;
+            if (wasPlaying) {
+              clearInterval(autoPlayInterval);
+              autoPlayInterval = null;
+            }
+            modal.style.display = 'block';
+            modalImg.src = img2.src;
+          } else if (e.key === 'd') {
+            // 右の画像(img1)を拡大表示
+            wasPlaying = autoPlayInterval !== null;
+            if (wasPlaying) {
+              clearInterval(autoPlayInterval);
+              autoPlayInterval = null;
+            }
+            modal.style.display = 'block';
+            modalImg.src = img1.src;
           }
         }
       });
