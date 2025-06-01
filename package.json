@@ -1,0 +1,24 @@
+{
+  "name": "screenshot-scheduler",
+  "version": "1.0.0",
+  "description": "一定時間ごとに Mac のスクリーンショットを撮影し、`~/Pictures/Screenshots` に保存するスクリプトです。",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chihatw/screenshot-scheduler.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chihatw/screenshot-scheduler/issues"
+  },
+  "homepage": "https://github.com/chihatw/screenshot-scheduler#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

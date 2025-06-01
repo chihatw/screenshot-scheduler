@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>画像ペアビューア</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background: #222;
+        color: #fff;
+      }
+      #image-info {
+        margin-bottom: 1em;
+        font-size: 1.3em;
+      }
+      #image-pair {
+        display: flex;
+        gap: 2vw;
+        margin-bottom: 2vh;
+      }
+      img {
+        max-width: 40vw;
+        max-height: 80vh;
+        border-radius: 8px;
+        box-shadow: 0 2px 16px #0008;
+        background: #444;
+      }
+      #counter {
+        font-size: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="image-info"></div>
+    <div id="image-pair">
+      <img id="img2" src="" alt="画像2" />
+      <img id="img1" src="" alt="画像1" />
+    </div>
+    <div id="counter"></div>
+    <script>
+      // imagesディレクトリのファイル名をAPIから取得
+      let imageFiles = [];
+      let imagePairs = [];
+      let current = 0;
+      const img1 = document.getElementById('img1');
+      const img2 = document.getElementById('img2');
+      const counter = document.getElementById('counter');
+      const info = document.getElementById('image-info');
+      function formatFilename(filename) {
+        // MMDD_HHMM_1.jpg → M月D日 H時MM分
+        const match = filename.match(/(\d{4})_(\d{4})_\d\.jpg/);
+        if (!match) return filename;
+        const mmdd = match[1];
+        const hhmm = match[2];
+        const month = parseInt(mmdd.slice(0, 2), 10);
+        const day = parseInt(mmdd.slice(2, 4), 10);
+        const hour = parseInt(hhmm.slice(0, 2), 10);
+        const min = parseInt(hhmm.slice(2, 4), 10);
+        return `${month}月${day}日 ${hour}時${min
+          .toString()
+          .padStart(2, '0')}分`;
+      }
+      function showPair(idx) {
+        if (idx < 0 || idx >= imagePairs.length) return;
+        const [f1, f2] = imagePairs[idx];
+        img1.src = `images/${f1}`;
+        img2.src = `images/${f2}`;
+        img1.style.display = '';
+        img2.style.display = '';
+        img1.onerror = () => (img1.style.display = 'none');
+        img2.onerror = () => (img2.style.display = 'none');
+        counter.textContent = `${idx + 1} / ${imagePairs.length}`;
+        info.textContent = formatFilename(f1);
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+          if (current < imagePairs.length - 1) current++;
+          showPair(current);
+        } else if (e.key === 'ArrowLeft') {
+          if (current > 0) current--;
+          showPair(current);
+        }
+      });
+      // APIから画像ファイル一覧を取得し、ペアを作成
+      fetch('/api/images')
+        .then((res) => res.json())
+        .then((files) => {
+          imageFiles = files;
+          imagePairs = [];
+          for (let i = 0; i < imageFiles.length; i += 2) {
+            if (imageFiles[i + 1]) {
+              imagePairs.push([imageFiles[i], imageFiles[i + 1]]);
+            }
+          }
+          showPair(current);
+        });
+    </script>
+  </body>
+</html>
