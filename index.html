@@ -63,6 +63,25 @@
       .clickable:hover {
         transform: scale(1.02);
       }
+      /* 再生・停止ボタンのスタイル */
+      #play-button,
+      #stop-button {
+        padding: 8px 15px;
+        margin: 0 5px;
+        cursor: pointer;
+        border: none;
+        border-radius: 4px;
+        font-size: 1em;
+        transition: all 0.2s;
+      }
+      #play-button:hover {
+        background-color: #4caf50;
+        color: white;
+      }
+      #stop-button:hover {
+        background-color: #f44336;
+        color: white;
+      }
       /* モーダルスタイル */
       .modal {
         display: none;
@@ -112,6 +131,21 @@
       />
     </div>
 
+    <div id="playback-controls" style="margin: 15px 0">
+      <button
+        id="play-button"
+        style="padding: 8px 15px; margin: 0 5px; cursor: pointer"
+      >
+        自動再生
+      </button>
+      <button
+        id="stop-button"
+        style="padding: 8px 15px; margin: 0 5px; cursor: pointer"
+      >
+        停止
+      </button>
+    </div>
+
     <!-- モーダル表示用の要素 -->
     <div id="image-modal" class="modal">
       <span class="close">&times;</span>
@@ -122,11 +156,52 @@
       let imageFiles = [];
       let imagePairs = [];
       let current = 0;
+      let autoPlayInterval = null; // 自動再生用のインターバル変数
       const img1 = document.getElementById('img1');
       const img2 = document.getElementById('img2');
       const counter = document.getElementById('counter');
       const info = document.getElementById('image-info');
       const slider = document.getElementById('image-slider');
+      const playButton = document.getElementById('play-button');
+      const stopButton = document.getElementById('stop-button');
+
+      // 自動再生開始関数
+      function startAutoPlay() {
+        // 既に自動再生中なら何もしない
+        if (autoPlayInterval) return;
+
+        autoPlayInterval = setInterval(() => {
+          if (current < imagePairs.length - 1) {
+            current++;
+          } else {
+            current = 0; // 最後まで行ったら最初に戻る
+          }
+          showPair(current);
+        }, 800); // 0.8秒ごとに切り替え
+
+        // ボタンの状態を変更
+        playButton.style.backgroundColor = '#4CAF50';
+        stopButton.style.backgroundColor = '';
+      }
+
+      // 自動再生停止関数
+      function stopAutoPlay() {
+        if (autoPlayInterval) {
+          clearInterval(autoPlayInterval);
+          autoPlayInterval = null;
+
+          // ボタンの状態を変更
+          playButton.style.backgroundColor = '';
+          stopButton.style.backgroundColor = '#f44336';
+        }
+      }
+
+      // 自動再生ボタンのイベントリスナー
+      playButton.addEventListener('click', startAutoPlay);
+
+      // 停止ボタンのイベントリスナー
+      stopButton.addEventListener('click', stopAutoPlay);
+
       function formatFilename(filename) {
         // MMDD_HHMM_1.jpg → M月D日 H時MM分
         const match = filename.match(/(\d{4})_(\d{4})_\d\.jpg/);
@@ -158,15 +233,18 @@
       }
       document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowRight') {
+          stopAutoPlay(); // 手動操作時は自動再生を停止
           if (current < imagePairs.length - 1) current++;
           showPair(current);
         } else if (e.key === 'ArrowLeft') {
+          stopAutoPlay(); // 手動操作時は自動再生を停止
           if (current > 0) current--;
           showPair(current);
         }
       });
       // スライダーのイベントリスナーを設定
       slider.addEventListener('input', function () {
+        stopAutoPlay(); // 手動操作時は自動再生を停止
         current = parseInt(this.value);
         showPair(current);
       });
@@ -175,27 +253,72 @@
       const modal = document.getElementById('image-modal');
       const modalImg = document.getElementById('modal-img');
       const closeBtn = document.querySelector('.close');
+      let wasPlaying = false; // モーダル表示前に自動再生中だったかを記録
 
-      // 画像クリックイベントの設定
-      img1.addEventListener('click', function () {
-        modal.style.display = 'block';
-        modalImg.src = this.src;
-      });
+      // マウスホバー関連の変数
+      let isHovering = false;
+      let wasPlayingBeforeHover = false;
 
-      img2.addEventListener('click', function () {
+      // 画像ホバーイベントの設定 - マウスが画像に入った時
+      function handleMouseEnter() {
+        isHovering = true;
+        // 自動再生中かどうかを記録
+        wasPlayingBeforeHover = autoPlayInterval !== null;
+        if (wasPlayingBeforeHover) {
+          clearInterval(autoPlayInterval);
+          autoPlayInterval = null;
+          // ボタンの見た目は変えない（一時停止状態なので）
+        }
+      }
+
+      // 画像ホバーイベントの設定 - マウスが画像から出た時
+      function handleMouseLeave() {
+        isHovering = false;
+        // ホバー前に再生中だった場合は再開
+        if (wasPlayingBeforeHover) {
+          startAutoPlay();
+        }
+      }
+
+      // イベントリスナーの登録
+      img1.addEventListener('mouseenter', handleMouseEnter);
+      img1.addEventListener('mouseleave', handleMouseLeave);
+      img2.addEventListener('mouseenter', handleMouseEnter);
+      img2.addEventListener('mouseleave', handleMouseLeave); // 画像クリックイベントの設定
+      function handleImageClick(event) {
+        // 自動再生中かどうかを記録し、一時停止
+        wasPlaying = autoPlayInterval !== null;
+        if (wasPlaying) {
+          clearInterval(autoPlayInterval);
+          autoPlayInterval = null;
+        }
+
         modal.style.display = 'block';
-        modalImg.src = this.src;
-      });
+        modalImg.src = event.target.src;
+      }
+
+      img1.addEventListener('click', handleImageClick);
+      img2.addEventListener('click', handleImageClick);
 
       // モーダルを閉じる
       closeBtn.addEventListener('click', function () {
         modal.style.display = 'none';
+
+        // モーダル表示前に自動再生中だった場合は再開
+        if (wasPlaying) {
+          startAutoPlay();
+        }
       });
 
       // モーダル外クリックでも閉じる
       modal.addEventListener('click', function (e) {
         if (e.target === modal) {
           modal.style.display = 'none';
+
+          // モーダル表示前に自動再生中だった場合は再開
+          if (wasPlaying) {
+            startAutoPlay();
+          }
         }
       });
 
@@ -203,6 +326,11 @@
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal.style.display === 'block') {
           modal.style.display = 'none';
+
+          // モーダル表示前に自動再生中だった場合は再開
+          if (wasPlaying) {
+            startAutoPlay();
+          }
         }
       });
 

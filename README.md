@@ -4,14 +4,29 @@
 
 - Time Machine のバックアップからは除外してください。
 
-## 各スクリプトの概要
+### process_screenshots.sh
 
-| スクリプト名                                | 役割・特徴                                                                              |
-| :------------------------------------------ | :-------------------------------------------------------------------------------------- |
-| `scripts/capture.sh`                        | すべてのディスプレイのスクリーンショットを撮影し、`~/Pictures/Screenshots` に保存します |
-| `scripts/cleanup.sh`                        | 2 日以上前のスクリーンショット画像（.png）を自動で削除します                            |
-| `scripts/organize_yesterday_screenshots.sh` | 前日分のスクリーンショットを日付ごとのサブディレクトリにまとめて移動します              |
-| `scripts/com.chiha.cleanup.plist`           | launchd 用の設定ファイル。`cleanup.sh`を毎日自動実行するために使用します                |
+- `~/Pictures/Screenshots` 内の前日のスクリーンショットをサブディレクトリにまとめ、画像ビューアを起動します。
+- 主な機能：
+  1. 前日のスクリーンショット（ファイル名パターン: MMDD*\*.jpg、MMDD*\*.png など）を検索
+  2. ファイルを日付ごとのサブディレクトリ（例: `~/Pictures/Screenshots/0531`）に移動
+  3. 移動したスクリーンショットを `/images` ディレクトリにコピー
+  4. Node.js サーバーを起動
+  5. Safari で画像ビューア（http://localhost:3000）を開く
+- 既にサブディレクトリに移動済みの場合も対応（コピーと表示のみ実行）
+- 複数の Node.js 環境に対応（NVM や Homebrew など）
+- スクリプトの場所: `scripts/process_screenshots.sh`
+- 実行例:
+  ```sh
+  ./scripts/process_screenshots.sh
+  ```
+
+| スクリプト名                      | 役割・特徴                                                                              |
+| :-------------------------------- | :-------------------------------------------------------------------------------------- |
+| `scripts/capture.sh`              | すべてのディスプレイのスクリーンショットを撮影し、`~/Pictures/Screenshots` に保存します |
+| `scripts/cleanup.sh`              | 2 日以上前のスクリーンショット画像（.png）を自動で削除します                            |
+| `scripts/process_screenshots.sh`  | 前日のスクリーンショットをサブディレクトリに移動し、画像ビューアを起動します            |
+| `scripts/com.chiha.cleanup.plist` | launchd 用の設定ファイル。`cleanup.sh`を毎日自動実行するために使用します                |
 
 ---
 
@@ -124,25 +139,19 @@ launchctl load ~/Library/LaunchAgents/com.chiha.cleanup.plist
 
 ## 前日のスクリーンショットをサブディレクトリにまとめる
 
-### organize_yesterday_screenshots.sh
-
-- `~/Pictures/Screenshots` 内のファイル名から日付（MMDD）を抽出し、前日分のファイルを対応するサブフォルダ（例: `0601`）にまとめて移動します。
-- スクリプトの場所: `scripts/organize_yesterday_screenshots.sh`
-- 実行例:
-  ```sh
-  ./scripts/organize_yesterday_screenshots.sh
-  ```
-
-### Automator アプリ「前日のファイルをサブディレクトリにまとめる.app」
+### Automator アプリ「ScreenshotViewer.app」
 
 - Automator で「アプリケーション」として作成し、
-  - 「シェルスクリプトを実行」アクションに
+  - 「シェルスクリプトを実行」アクションに以下のコードを設定
     ```sh
-    /Users/chiha/projects-active/screenshot-scheduler/scripts/organize_yesterday_screenshots.sh
+    export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    cd /Users/chiha/projects-active/screenshot-scheduler
+    /Users/chiha/projects-active/screenshot-scheduler/scripts/process_screenshots.sh
     ```
-    を記述。
-- `~/Pictures/Screenshots` フォルダに「前日のファイルをサブディレクトリにまとめる.app」を配置。
-- ダブルクリックで前日分のファイル整理が可能。
+- 任意の場所に保存し、ダブルクリックで実行すると：
+  - 前日のスクリーンショットを整理
+  - Node.js サーバーを起動
+  - Safari で画像ビューアを表示
 
 > ※ capture.sh などで保存したファイルを日付ごとに整理したい場合に便利です。
 
@@ -199,6 +208,8 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
 
 - `/images` ディレクトリ内の画像ペアをブラウザで表示する機能を追加しました。
 - キーボードの矢印キーを使用して画像ペアを切り替えることができます。
+- 自動再生機能により、0.8 秒ごとに画像ペアを自動で切り替えることができます。
+- 画像にマウスホバーすると自動再生が一時停止する機能を実装しました。
 - 画像ファイル名を日本語形式の日付と時刻に変換して表示します（例: `MMDD_HHMM_1.jpg` → `M月D日 H時MM分`）。
 
 ### サーバー設定
@@ -240,8 +251,14 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
 2. 画像の上部にファイル名が日本語形式で表示されます。
 3. スライダーを使用して任意の画像ペアに素早く移動できます。
    - カウンター（例: 1/65）の下にあるスライダーをドラッグすると、対応する位置の画像ペアが表示されます。
-4. 画像をクリックすると拡大表示されます。
+4. 自動再生と停止機能：
+   - 「自動再生」ボタンをクリックすると、0.8 秒ごとに次の画像ペアに自動で切り替わります。
+   - 「停止」ボタンをクリックすると、自動再生が停止します。
+   - 画像にマウスカーソルを合わせると自動再生が一時停止し、マウスが離れると再開します。
+   - 矢印キーやスライダーで手動操作すると、自動再生は停止します。
+5. 画像をクリックすると拡大表示されます。
    - 画像をクリックすると、モーダルウィンドウで拡大表示されます。
+   - 拡大表示中は自動再生が一時停止し、閉じると元の状態に戻ります。
    - 拡大表示を閉じるには、以下のいずれかの操作を行います：
      - 画像外の暗い領域をクリック
      - 右上の × ボタンをクリック
@@ -249,6 +266,6 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
 
 ### ファイル構成
 
-- `index.html`: 画像ペア表示のための HTML ファイル。
+- `index.html`: 画像ペア表示のための HTML ファイル。自動再生・停止機能とホバー機能を含みます。
 - `server.js`: Node.js サーバーの設定と API 実装。
 - `/images`: 表示対象の画像ファイルを格納するディレクトリ。
