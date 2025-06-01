@@ -22,6 +22,18 @@
         display: flex;
         gap: 2vw;
         margin-bottom: 2vh;
+        width: 90%; /* 幅を広げて確実に設定を適用 */
+        align-items: flex-start; /* 高さの上端合わせ */
+      }
+      #img1 {
+        flex: 3;
+        max-width: 60%; /* max-widthを上書き */
+        height: auto;
+      }
+      #img2 {
+        flex: 2;
+        max-width: 40%; /* max-widthを上書き */
+        height: auto;
       }
       img {
         max-width: 40vw;
@@ -33,15 +45,78 @@
       #counter {
         font-size: 1.2em;
       }
+      #slider-container {
+        display: flex;
+        justify-content: center;
+        width: 80%;
+        margin: 15px 0;
+      }
+      #image-slider {
+        width: 100%;
+        height: 20px;
+        margin: 0;
+      }
+      .clickable {
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .clickable:hover {
+        transform: scale(1.02);
+      }
+      /* モーダルスタイル */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        padding-top: 50px;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.9);
+      }
+      .modal-content {
+        margin: auto;
+        display: block;
+        max-width: 90%;
+        max-height: 90vh;
+      }
+      .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1001;
+      }
     </style>
   </head>
   <body>
     <div id="image-info"></div>
     <div id="image-pair">
-      <img id="img2" src="" alt="画像2" />
-      <img id="img1" src="" alt="画像1" />
+      <img id="img2" src="" alt="画像2" class="clickable" />
+      <img id="img1" src="" alt="画像1" class="clickable" />
     </div>
     <div id="counter"></div>
+    <div id="slider-container" style="width: 80%; margin: 15px 0">
+      <input
+        type="range"
+        id="image-slider"
+        min="0"
+        max="0"
+        value="0"
+        style="width: 100%"
+      />
+    </div>
+
+    <!-- モーダル表示用の要素 -->
+    <div id="image-modal" class="modal">
+      <span class="close">&times;</span>
+      <img id="modal-img" class="modal-content" src="" alt="拡大画像" />
+    </div>
     <script>
       // imagesディレクトリのファイル名をAPIから取得
       let imageFiles = [];
@@ -51,6 +126,7 @@
       const img2 = document.getElementById('img2');
       const counter = document.getElementById('counter');
       const info = document.getElementById('image-info');
+      const slider = document.getElementById('image-slider');
       function formatFilename(filename) {
         // MMDD_HHMM_1.jpg → M月D日 H時MM分
         const match = filename.match(/(\d{4})_(\d{4})_\d\.jpg/);
@@ -76,6 +152,9 @@
         img2.onerror = () => (img2.style.display = 'none');
         counter.textContent = `${idx + 1} / ${imagePairs.length}`;
         info.textContent = formatFilename(f1);
+
+        // スライダーの値を更新（イベントループを避けるためにchangeイベントを発生させない）
+        slider.value = idx;
       }
       document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowRight') {
@@ -86,6 +165,47 @@
           showPair(current);
         }
       });
+      // スライダーのイベントリスナーを設定
+      slider.addEventListener('input', function () {
+        current = parseInt(this.value);
+        showPair(current);
+      });
+
+      // モーダル関連の要素
+      const modal = document.getElementById('image-modal');
+      const modalImg = document.getElementById('modal-img');
+      const closeBtn = document.querySelector('.close');
+
+      // 画像クリックイベントの設定
+      img1.addEventListener('click', function () {
+        modal.style.display = 'block';
+        modalImg.src = this.src;
+      });
+
+      img2.addEventListener('click', function () {
+        modal.style.display = 'block';
+        modalImg.src = this.src;
+      });
+
+      // モーダルを閉じる
+      closeBtn.addEventListener('click', function () {
+        modal.style.display = 'none';
+      });
+
+      // モーダル外クリックでも閉じる
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+
+      // Escキーでもモーダルを閉じる
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.style.display === 'block') {
+          modal.style.display = 'none';
+        }
+      });
+
       // APIから画像ファイル一覧を取得し、ペアを作成
       fetch('/api/images')
         .then((res) => res.json())
@@ -97,6 +217,8 @@
               imagePairs.push([imageFiles[i], imageFiles[i + 1]]);
             }
           }
+          // スライダーの最大値を設定
+          slider.max = imagePairs.length - 1;
           showPair(current);
         });
     </script>
