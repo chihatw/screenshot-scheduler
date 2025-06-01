@@ -4,6 +4,92 @@
 
 - Time Machine のバックアップからは除外してください。
 
+## 各スクリプトの概要
+
+| スクリプト名                                | 役割・特徴                                                                              |
+| :------------------------------------------ | :-------------------------------------------------------------------------------------- |
+| `scripts/capture.sh`                        | すべてのディスプレイのスクリーンショットを撮影し、`~/Pictures/Screenshots` に保存します |
+| `scripts/cleanup.sh`                        | 2 日以上前のスクリーンショット画像（.png）を自動で削除します                            |
+| `scripts/organize_yesterday_screenshots.sh` | 前日分のスクリーンショットを日付ごとのサブディレクトリにまとめて移動します              |
+| `scripts/com.chiha.cleanup.plist`           | launchd 用の設定ファイル。`cleanup.sh`を毎日自動実行するために使用します                |
+
+---
+
+## 運用方法（おすすめの使い方）
+
+### スクリーンショットの自動取得
+
+- Automator アプリを定期的に起動することで、Mac のスクリーンショットを自動で保存できます。
+- 例: 1 分ごとに実行したい場合は、カレンダーやリマインダー、または別のスケジューラを利用してください。
+
+### 古いスクリーンショットの自動削除
+
+- 定期的に `scripts/cleanup.sh` を実行することで、2 日以上前の画像ファイルを自動で削除できます。
+- Automator アプリやスケジューラで 1 日 1 回などの頻度で実行するのがおすすめです。
+  ```sh
+  /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
+  ```
+
+### launchd（macOS 標準）による自動削除の設定方法
+
+macOS では`launchd`を使うことで、スリープや電源 OFF 時も含めて、毎日決まった時刻に`cleanup.sh`を自動実行できます。
+
+- 12:00 に Mac がスリープや電源 OFF の場合、復帰・起動時に自動で実行されます。
+
+#### 1. plist ファイルの用意
+
+`scripts/com.chiha.cleanup.plist` を用意します（本リポジトリにサンプルあり）。内容例：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.chiha.cleanup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>12</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+```
+
+#### 2. 実行権限の付与
+
+```zsh
+chmod +x /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
+```
+
+#### 3. LaunchAgents ディレクトリへコピー
+
+```zsh
+cp /Users/chiha/projects-active/screenshot-scheduler/scripts/com.chiha.cleanup.plist ~/Library/LaunchAgents/
+```
+
+#### 4. launchd へ登録
+
+```zsh
+launchctl load ~/Library/LaunchAgents/com.chiha.cleanup.plist
+```
+
+#### 5. 動作
+
+- 毎日 12:00 に自動実行されます。
+- 12:00 に Mac がスリープや電源 OFF の場合、復帰・起動時に自動で実行されます。
+- 設定を変更した場合は`launchctl unload`→`load`で再読み込みしてください。
+
+---
+
 ## 注意: 画面収録権限について
 
 - スクリーンショットが壁紙のみになる場合は、**システム設定 > プライバシーとセキュリティ > 画面収録** で「ターミナル」に画面収録の権限を与えてください。
@@ -86,10 +172,11 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
    crontab -e
    ```
 2. エディタが開いたら、下記のような行を追加します。
-   - 1 分ごとに Automator アプリを起動:
+   - 10 分ごとに Automator アプリを起動:
      ```sh
-     * * * * * open /Users/chiha/projects-active/screenshot-scheduler/ScreenshotCapture.app
+     */10 * * * * open /Users/chiha/projects-active/screenshot-scheduler/ScreenshotCapture.app
      ```
+     > crontab はスリープ時や電源オフ時には実行されません。Mac がスリープ・電源オフ中はスクリーンショットは撮影されません。
 3. 保存してエディタを閉じると、設定が反映されます。
 
 ### crontab のスケジュール確認方法
@@ -105,76 +192,3 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
 - 編集が終わったら: `Esc` を押す（ノーマルモード）
 - 保存して終了: `:wq` と入力し Enter
 - 保存せず終了: `:q!` と入力し Enter
-
-## 運用方法
-
-### スクリーンショットの自動取得
-
-- Automator アプリを定期的に起動することで、Mac のスクリーンショットを自動で保存できます。
-- 例: 1 分ごとに実行したい場合は、カレンダーやリマインダー、または別のスケジューラを利用してください。
-
-### 古いスクリーンショットの自動削除
-
-- 定期的に `scripts/cleanup.sh` を実行することで、2 日以上前の画像ファイルを自動で削除できます。
-- Automator アプリやスケジューラで 1 日 1 回などの頻度で実行するのがおすすめです。
-  ```sh
-  /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
-  ```
-
-### launchd（macOS 標準）による自動削除の設定方法
-
-macOS では`launchd`を使うことで、スリープや電源 OFF 時も含めて、毎日決まった時刻に`cleanup.sh`を自動実行できます。
-
-#### 1. plist ファイルの用意
-
-`scripts/com.chiha.cleanup.plist` を用意します（本リポジトリにサンプルあり）。内容例：
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.chiha.cleanup</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh</string>
-  </array>
-  <key>StartCalendarInterval</key>
-  <dict>
-    <key>Hour</key>
-    <integer>12</integer>
-    <key>Minute</key>
-    <integer>0</integer>
-  </dict>
-  <key>RunAtLoad</key>
-  <true/>
-</dict>
-</plist>
-```
-
-#### 2. 実行権限の付与
-
-```zsh
-chmod +x /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
-```
-
-#### 3. LaunchAgents ディレクトリへコピー
-
-```zsh
-cp /Users/chiha/projects-active/screenshot-scheduler/scripts/com.chiha.cleanup.plist ~/Library/LaunchAgents/
-```
-
-#### 4. launchd へ登録
-
-```zsh
-launchctl load ~/Library/LaunchAgents/com.chiha.cleanup.plist
-```
-
-#### 5. 動作
-
-- 毎日 12:00 に自動実行されます。
-- 12:00 に Mac がスリープや電源 OFF の場合、復帰・起動時に自動で実行されます。
-- 設定を変更した場合は`launchctl unload`→`load`で再読み込みしてください。
-
----
