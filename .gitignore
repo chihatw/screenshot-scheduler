@@ -1,3 +1,4 @@
 # ScreenshotCapture.app（Automatorアプリ）はリポジトリに含めない
 ScreenshotCapture.app/
 .DS_Store
+PROMPTS.md

@@ -36,6 +36,30 @@
   ./scripts/cleanup.sh
   ```
 
+## 前日のスクリーンショットをサブディレクトリにまとめる
+
+### organize_yesterday_screenshots.sh
+
+- `~/Pictures/Screenshots` 内のファイル名から日付（MMDD）を抽出し、前日分のファイルを対応するサブフォルダ（例: `0601`）にまとめて移動します。
+- スクリプトの場所: `scripts/organize_yesterday_screenshots.sh`
+- 実行例:
+  ```sh
+  ./scripts/organize_yesterday_screenshots.sh
+  ```
+
+### Automator アプリ「前日のファイルをサブディレクトリにまとめる.app」
+
+- Automator で「アプリケーション」として作成し、
+  - 「シェルスクリプトを実行」アクションに
+    ```sh
+    /Users/chiha/projects-active/screenshot-scheduler/scripts/organize_yesterday_screenshots.sh
+    ```
+    を記述。
+- `~/Pictures/Screenshots` フォルダに「前日のファイルをサブディレクトリにまとめる.app」を配置。
+- ダブルクリックで前日分のファイル整理が可能。
+
+> ※ capture.sh などで保存したファイルを日付ごとに整理したい場合に便利です。
+
 ## Automator 経由での自動実行方法
 
 crontab では macOS のセキュリティ制限により壁紙しか撮影できない場合があります。Automator アプリ経由で capture.sh を実行することで、画面収録権限を正しく反映できます。
@@ -97,11 +121,11 @@ crontab では macOS のセキュリティ制限により壁紙しか撮影で�
   /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
   ```
 
-### launchd（macOS標準）による自動削除の設定方法
+### launchd（macOS 標準）による自動削除の設定方法
 
-macOSでは`launchd`を使うことで、スリープや電源OFF時も含めて、毎日決まった時刻に`cleanup.sh`を自動実行できます。
+macOS では`launchd`を使うことで、スリープや電源 OFF 時も含めて、毎日決まった時刻に`cleanup.sh`を自動実行できます。
 
-#### 1. plistファイルの用意
+#### 1. plist ファイルの用意
 
 `scripts/com.chiha.cleanup.plist` を用意します（本リポジトリにサンプルあり）。内容例：
 
@@ -135,13 +159,13 @@ macOSでは`launchd`を使うことで、スリープや電源OFF時も含めて
 chmod +x /Users/chiha/projects-active/screenshot-scheduler/scripts/cleanup.sh
 ```
 
-#### 3. LaunchAgentsディレクトリへコピー
+#### 3. LaunchAgents ディレクトリへコピー
 
 ```zsh
 cp /Users/chiha/projects-active/screenshot-scheduler/scripts/com.chiha.cleanup.plist ~/Library/LaunchAgents/
 ```
 
-#### 4. launchdへ登録
+#### 4. launchd へ登録
 
 ```zsh
 launchctl load ~/Library/LaunchAgents/com.chiha.cleanup.plist
@@ -149,8 +173,8 @@ launchctl load ~/Library/LaunchAgents/com.chiha.cleanup.plist
 
 #### 5. 動作
 
-- 毎日12:00に自動実行されます。
-- 12:00にMacがスリープや電源OFFの場合、復帰・起動時に自動で実行されます。
+- 毎日 12:00 に自動実行されます。
+- 12:00 に Mac がスリープや電源 OFF の場合、復帰・起動時に自動で実行されます。
 - 設定を変更した場合は`launchctl unload`→`load`で再読み込みしてください。
 
 ---
