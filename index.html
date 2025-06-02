@@ -111,34 +111,48 @@
         cursor: pointer;
         z-index: 1001;
       }
-    </style>
-  </head>
-  <body>
-    <div id="image-info"></div>
-
-    <div id="image-pair">
-      <img id="img2" src="" alt="画像2" class="clickable" />
-      <img id="img1" src="" alt="画像1" class="clickable" />
-    </div>
-    <div
-      id="shortcut-info"
-      style="
+      /* ショートカット説明 共通スタイル */
+      .shortcut-info-bar {
         margin: 2px 0 8px 0;
         font-size: 0.85em;
         color: #aaa;
         opacity: 0.6;
         letter-spacing: 0.02em;
-      "
-    >
+        text-align: center;
+        background: none;
+        padding: 0;
+        font-weight: normal;
+      }
+      .shortcut-info-bar span {
+        margin-left: 0.7em;
+      }
+      #modal-shortcut-info.shortcut-info-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        padding: 8px 0 8px 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="image-info"></div>
+    <div id="image-pair">
+      <img id="img2" src="" alt="画像2" class="clickable" />
+      <img id="img1" src="" alt="画像1" class="clickable" />
+    </div>
+    <div id="shortcut-info" class="shortcut-info-bar">
       <span style="font-weight: normal">ショートカット:</span>
-      <span style="margin-left: 0.7em">←/→:前/次</span>
-      <span style="margin-left: 0.7em">a:左拡大</span>
-      <span style="margin-left: 0.7em">d:右拡大</span>
-      <span style="margin-left: 0.7em">Esc:閉じる</span>
-      <span style="margin-left: 0.7em">画像クリック:拡大</span>
+      <span>←/→:前/次</span>
+      <span>a:左拡大</span>
+      <span>d:右拡大</span>
+      <span>Esc:閉じる</span>
+      <span>画像クリック:拡大</span>
     </div>
     <div id="counter"></div>
-
     <div id="slider-container" style="width: 80%; margin: 15px 0">
       <input
         type="range"
@@ -149,7 +163,6 @@
         style="width: 100%"
       />
     </div>
-
     <div id="playback-controls" style="margin: 15px 0">
       <button
         id="play-button"
@@ -168,7 +181,32 @@
     <!-- モーダル表示用の要素 -->
     <div id="image-modal" class="modal">
       <span class="close">&times;</span>
+      <div
+        id="modal-date-info"
+        style="
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.45);
+          font-size: 1.15em;
+          text-align: center;
+          padding: 10px 0 6px 0;
+          z-index: 1002;
+          letter-spacing: 0.04em;
+          pointer-events: none;
+        "
+      ></div>
       <img id="modal-img" class="modal-content" src="" alt="拡大画像" />
+      <div id="modal-shortcut-info" class="shortcut-info-bar">
+        <span style="font-weight: normal">ショートカット:</span>
+        <span>←/→:前/次</span>
+        <span>a:左拡大</span>
+        <span>d:右拡大</span>
+        <span>Esc:閉じる</span>
+        <span>画像クリック:拡大</span>
+      </div>
     </div>
     <script>
       // imagesディレクトリのファイル名をAPIから取得
@@ -351,28 +389,6 @@
             startAutoPlay();
           }
         }
-        // a/dキーで画像拡大表示（モーダルが開いていない時のみ）
-        if (modal.style.display !== 'block') {
-          if (e.key === 'a') {
-            // 左の画像(img2)を拡大表示
-            wasPlaying = autoPlayInterval !== null;
-            if (wasPlaying) {
-              clearInterval(autoPlayInterval);
-              autoPlayInterval = null;
-            }
-            modal.style.display = 'block';
-            modalImg.src = img2.src;
-          } else if (e.key === 'd') {
-            // 右の画像(img1)を拡大表示
-            wasPlaying = autoPlayInterval !== null;
-            if (wasPlaying) {
-              clearInterval(autoPlayInterval);
-              autoPlayInterval = null;
-            }
-            modal.style.display = 'block';
-            modalImg.src = img1.src;
-          }
-        }
       });
 
       // APIから画像ファイル一覧を取得し、ペアを作成
@@ -390,6 +406,85 @@
           slider.max = imagePairs.length - 1;
           showPair(current);
         });
+
+      // --- ここから追加・修正 ---
+      // モーダルの状態管理
+      let modalSide = null; // 'left' or 'right'
+      let modalCurrentIdx = 0; // 拡大中のペアindex
+
+      function openModal(side) {
+        wasPlaying = autoPlayInterval !== null;
+        if (wasPlaying) {
+          clearInterval(autoPlayInterval);
+          autoPlayInterval = null;
+        }
+        modal.style.display = 'block';
+        modalSide = side;
+        modalCurrentIdx = current;
+        updateModalImage();
+      }
+
+      function updateModalImage() {
+        let fileName = null;
+        if (modalSide === 'left') {
+          modalImg.src = img2.src;
+          fileName = imagePairs[modalCurrentIdx][1];
+        } else {
+          modalImg.src = img1.src;
+          fileName = imagePairs[modalCurrentIdx][0];
+        }
+        // 日時表示
+        document.getElementById('modal-date-info').textContent =
+          formatFilename(fileName);
+      }
+
+      // 画像クリックイベントの修正
+      img1.addEventListener('click', function () {
+        openModal('right');
+      });
+      img2.addEventListener('click', function () {
+        openModal('left');
+      });
+
+      // モーダルのキー操作
+      function handleModalKeydown(e) {
+        if (modal.style.display === 'block') {
+          if (e.key === 'Escape') {
+            modal.style.display = 'none';
+            if (wasPlaying) startAutoPlay();
+            return;
+          }
+          if (e.key === 'a') {
+            modalSide = 'left';
+            updateModalImage();
+          } else if (e.key === 'd') {
+            modalSide = 'right';
+            updateModalImage();
+          } else if (e.key === 'ArrowRight') {
+            if (modalCurrentIdx < imagePairs.length - 1) {
+              modalCurrentIdx++;
+              current = modalCurrentIdx;
+              showPair(current);
+              updateModalImage();
+            }
+          } else if (e.key === 'ArrowLeft') {
+            if (modalCurrentIdx > 0) {
+              modalCurrentIdx--;
+              current = modalCurrentIdx;
+              showPair(current);
+              updateModalImage();
+            }
+          }
+        } else {
+          if (e.key === 'a') {
+            openModal('left');
+          } else if (e.key === 'd') {
+            openModal('right');
+          }
+        }
+      }
+      document.addEventListener('keydown', handleModalKeydown);
+      // --- 既存のa/dキー拡大表示部分は不要なので削除 ---
     </script>
   </body>
 </html>
