@@ -1,3 +1,24 @@
+# ScreenshotViewer.app とは？
+
+> **ダブルクリックで「前日のスクリーンショット整理＆画像ビューア起動」！**
+
+- **ScreenshotViewer.app** は Automator で作成したアプリケーションです。
+- ダブルクリックで実行することで、
+  1. 前日分（当日 AM4 時まで）のスクリーンショットを日付ごとに整理
+  2. 画像ビューア（Web UI）を自動で起動
+  3. Safari で画像ペアをすぐに閲覧可能
+- **中身はシンプルなシェルスクリプト実行**：
+  - `process_screenshots.sh` を呼び出し、Node.js サーバーとブラウザを自動起動します。
+  - Node.js サーバーの起動が必要なのは、画像ビューアがローカルサーバー上で動作するためです。ファイル名取得などで必要です。
+  - Automator の「シェルスクリプトを実行」アクションに以下を記述：
+    ```sh
+    export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    cd /Users/chiha/projects-active/screenshot-scheduler
+    /Users/chiha/projects-active/screenshot-scheduler/scripts/process_screenshots.sh
+    ```
+
+---
+
 # screenshot-scheduler
 
 一定時間ごとに Mac のスクリーンショットを撮影し、`~/Pictures/Screenshots` に保存するスクリプトです。
