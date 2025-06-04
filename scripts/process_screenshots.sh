@@ -1,21 +1,28 @@
 #!/bin/bash
 
-# 昨日の日付を MMDD 形式で取得
-YESTERDAY=$(date -v-1d "+%m%d")
+# 昨日の日付と当日の日付を取得
+YESTERDAY_DATE=$(date -v-1d "+%Y-%m-%d")
+TODAY_DATE=$(date "+%Y-%m-%d")
+
+# 前日AM4:00と当日AM4:00の日時を生成
+START_DATETIME="$YESTERDAY_DATE 04:00:00"
+END_DATETIME="$TODAY_DATE 04:00:00"
 
 # スクリーンショットのディレクトリ
 SCREENSHOTS_DIR="$HOME/Pictures/Screenshots"
-TARGET_DIR="$SCREENSHOTS_DIR/$YESTERDAY"
+TARGET_DIR="$SCREENSHOTS_DIR/$(date -v-1d "+%m%d")"
 PROJECT_IMAGES_DIR="/Users/chiha/projects-active/screenshot-scheduler/images"
 
 # Node.js のパスを設定（Automator実行時のため）
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-# 前日のスクリーンショットを探す
-echo "前日 ($YESTERDAY) のスクリーンショットを検索中..."
+# 前日AM4:00～当日AM4:00のスクリーンショットを探す
+echo "前日AM4:00～当日AM4:00のスクリーンショットを検索中..."
 
-# スクリーンショット検索（複数のパターンに対応）
-SCREENSHOTS=$(find "$SCREENSHOTS_DIR" -maxdepth 1 -type f \( -name "${YESTERDAY}_*.jpg" -o -name "${YESTERDAY}_*.png" -o -name "*${YESTERDAY}*.jpg" -o -name "*${YESTERDAY}*.png" \))
+# スクリーンショット検索（複数のパターンに対応、かつタイムスタンプで絞り込み）
+SCREENSHOTS=$(find "$SCREENSHOTS_DIR" -maxdepth 1 -type f \(
+    -name "*.jpg" -o -name "*.png" \) \
+    -newermt "$START_DATETIME" ! -newermt "$END_DATETIME")
 
 # スクリーンショットが見つからず、ディレクトリが存在する場合は、すでに移動されたと仮定
 if [ -z "$SCREENSHOTS" ] && [ -d "$TARGET_DIR" ]; then
