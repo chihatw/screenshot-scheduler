@@ -20,9 +20,7 @@ export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 echo "前日AM4:00～当日AM4:00のスクリーンショットを検索中..."
 
 # スクリーンショット検索（複数のパターンに対応、かつタイムスタンプで絞り込み）
-SCREENSHOTS=$(find "$SCREENSHOTS_DIR" -maxdepth 1 -type f \(
-    -name "*.jpg" -o -name "*.png" \) \
-    -newermt "$START_DATETIME" ! -newermt "$END_DATETIME")
+SCREENSHOTS=$(find "$SCREENSHOTS_DIR" -maxdepth 1 -type f \( -name "*.jpg" -o -name "*.png" \) -newermt "$START_DATETIME" ! -newermt "$END_DATETIME")
 
 # スクリーンショットが見つからず、ディレクトリが存在する場合は、すでに移動されたと仮定
 if [ -z "$SCREENSHOTS" ] && [ -d "$TARGET_DIR" ]; then
