@@ -16,6 +16,12 @@ app.get('/api/images', (req, res) => {
   });
 });
 
+// サーバー終了API
+app.post('/shutdown', (req, res) => {
+  res.send('シャットダウンします');
+  process.exit(0);
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`http://localhost:${PORT} で index.html が見られます`);
